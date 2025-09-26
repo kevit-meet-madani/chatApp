@@ -15,20 +15,32 @@ const redisSubscriber = createClient();
   await redisPublisher.connect();
   await redisSubscriber.connect();
 
-  // Subscribe ONCE
+  
   await redisSubscriber.subscribe('room-1', (message) => {
     const chatMsg = JSON.parse(message);
-    io.emit('chatMessage', chatMsg); // broadcast to all clients
+    io.emit('chatMessage', chatMsg);
   });
 })();
 
-// Socket.IO handling
+
 io.on("connection", (socket) => {
   console.log("New user joined:", socket.id);
 
+  socket.on("newuser",async(user) => {
+    await redisPublisher.sAdd("online-users", user);
+    const users = await redisPublisher.sMembers("online-users");
+    console.log("Current online users:", users);
+    io.emit("onlineUsers",users);
+  })
+
+  socket.on("left", async(user) => {
+    await redisPublisher.sRem("online-users",user);
+    const users = await redisPublisher.sMembers("online-users");
+    io.emit("onlineUsers",users);
+  })
+
   socket.on("user-message", async (message) => {
     console.log("Received from client:", message);
-
     
     await redisPublisher.publish('room-1', JSON.stringify({
       id: socket.id,
@@ -37,4 +49,14 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(7000, () => console.log("🚀 Server running on http://localhost:7000"));
+app.get('/',(req,res,next) => {
+    res.status(200).json({
+        message:"Working"
+    })
+});
+
+server.listen(7000, '0.0.0.0', () => {
+  console.log('Server running on port 7000');
+});
+
+
