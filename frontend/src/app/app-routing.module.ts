@@ -6,12 +6,18 @@ import { ChatComponent } from './chat/chat.component';
 const routes: Routes = [
   {
     path:'',
-    component:LoginComponent
+    component:LoginComponent,
+    pathMatch: 'full'
   },
   {
     path:'chat',
     component:ChatComponent
-  }
+  },
+  {
+    path:'**',
+    component:LoginComponent,
+        pathMatch: 'full'
+  },
 ];
 
 @NgModule({

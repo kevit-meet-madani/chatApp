@@ -16,7 +16,8 @@ export class ChatComponent {
   messages:any = []
 
   ngOnInit(){
-    this.socket = io('http://172.24.2.207:7000', {
+    
+    this.socket = io('http://localhost:7000', {
            transports: ['websocket'], // ensures pure WS (optional, avoids polling)
      });
      this.socket.on("connect", () => {
@@ -33,6 +34,10 @@ export class ChatComponent {
        this.users = users;
        console.log(users)
      });
+
+     this.socket.on("msgs", (msgs:any) => {
+      this.messages = msgs;
+     })
 
   }
 

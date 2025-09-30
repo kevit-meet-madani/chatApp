@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { createClient } = require('redis');
+const red = require('ioredis');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +32,18 @@ io.on("connection", (socket) => {
     const users = await redisPublisher.sMembers("online-users");
     console.log("Current online users:", users);
     io.emit("onlineUsers",users);
+
+    let len = await redisPublisher.lLen("msgs");
+    if(len >= 50){
+      while(len > 0){
+        await redisPublisher.lPop("msgs");
+        len--;
+      }
+    }
+
+    const lastMessages = await redisPublisher.lRange("msgs", -50, -1);
+    const parsed = lastMessages.map(msg => JSON.parse(msg));
+    io.emit("msgs", parsed);
   })
 
   socket.on("left", async(user) => {
@@ -41,11 +54,19 @@ io.on("connection", (socket) => {
 
   socket.on("user-message", async (message) => {
     console.log("Received from client:", message);
+
     
-    await redisPublisher.publish('room-1', JSON.stringify({
-      id: socket.id,
-      text: message
-    }));
+
+    const chatMessage = {
+    user: socket.id, 
+    text: message,
+    timestamp: Date.now()
+  };
+
+    await redisPublisher.rPush("msgs",JSON.stringify(chatMessage));
+    await redisPublisher.lTrim("msgs",-50,-1);
+    
+    await redisPublisher.publish('room-1', JSON.stringify(chatMessage));
   });
 });
 
@@ -55,7 +76,8 @@ app.get('/',(req,res,next) => {
     })
 });
 
-server.listen(7000, '0.0.0.0', () => {
+
+server.listen(7000,() => {
   console.log('Server running on port 7000');
 });
 
