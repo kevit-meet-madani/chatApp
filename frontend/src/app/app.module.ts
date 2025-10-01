@@ -6,12 +6,15 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import { FormsModule } from '@angular/forms';
 import { ChatComponent } from './chat/chat.component';
+import { TaskListsComponent } from './tasklist/tasklist.component';
+
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginComponent,
-    ChatComponent
+    ChatComponent,
+    TaskListsComponent
   ],
   imports: [
     BrowserModule,

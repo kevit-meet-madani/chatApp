@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { createClient } = require('redis');
 const red = require('ioredis');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -75,6 +76,12 @@ app.get('/',(req,res,next) => {
         message:"Working"
     })
 });
+
+// app.use(express.static(path.join(__dirname, '../frontend/.angular/cache/17.3.17/frontend/.tsbuildinfo')));
+
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../frontend/.angular/cache/17.3.17/frontend/.tsbuildinfo'));
+// });
 
 
 server.listen(7000,() => {

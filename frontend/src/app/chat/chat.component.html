@@ -1,16 +1,17 @@
 <div class="flex h-screen bg-gray-900 text-white">
   <!-- Sidebar: Online Users -->
   <div class="w-64 bg-gray-800 p-4 border-r border-gray-700">
-    <h3 class="text-lg font-bold mb-4">Online Users</h3>
-    <ul>
-      <li
-        *ngFor="let user of users"
-        class="p-2 rounded-lg hover:bg-gray-700"
-      >
-        {{ user }}
-      </li>
-    </ul>
-  </div>
+<h3 class="text-lg font-bold mb-4">Online Users</h3>
+<ul>
+<li
+*ngFor="let user of users"
+class="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-3"
+>
+<div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-semibold">{{ user[0] }}</div>
+<div class="text-sm">{{ user }}</div>
+</li>
+</ul>
+</div>
 
   <!-- Main Chat Area -->
   <div class="flex-1 flex flex-col">
@@ -36,6 +37,12 @@
         class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold"
       >
         Send
+      </button>
+      <button
+      class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold"
+      [routerLink]="['/tasks']"
+      >
+        View team tasks
       </button>
       <button 
       (click)="left()"

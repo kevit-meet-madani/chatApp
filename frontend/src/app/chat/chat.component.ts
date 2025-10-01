@@ -15,31 +15,46 @@ export class ChatComponent {
   socket!:any
   messages:any = []
 
-  ngOnInit(){
-    
-    this.socket = io('http://localhost:7000', {
-           transports: ['websocket'], // ensures pure WS (optional, avoids polling)
-     });
-     this.socket.on("connect", () => {
-       const username = localStorage.getItem("user");
-       if (username) {
-          this.socket.emit("newuser", username);
-       }
-  });  
-     this.socket.on('chatMessage', (msg: any) => {
-       this.messages.push(msg); // instantly show new message
-     });
+  ngOnInit() {
+  // Initialize messages array safely
+  this.messages = [];
 
-    this.socket.on("onlineUsers", (users: string[]) => {
-       this.users = users;
-       console.log(users)
-     });
+  this.socket = io('http://localhost:7000', {
+    transports: ['websocket'],
+    reconnectionAttempts: 3, // limit retries
+    timeout: 5000
+  });
 
-     this.socket.on("msgs", (msgs:any) => {
-      this.messages = msgs;
-     })
+  // On successful connection
+  this.socket.on("connect", () => {
+    console.log("Socket connected:", this.socket.id);
 
-  }
+    const username = localStorage.getItem("user");
+    if (username) {
+      this.socket.emit("newuser", username);
+    }
+  });
+
+  // On receiving a new chat message
+  this.socket.on('chatMessage', (msg: any) => {
+    if (msg) this.messages.push(msg); // instantly show new message
+  });
+
+  // On receiving online users list
+  this.socket.on("onlineUsers", (users: string[]) => {
+    if (Array.isArray(users)) this.users = users;
+    console.log("Online users:", users);
+  });
+
+  // On receiving all previous messages
+  this.socket.on("msgs", (msgs: any) => {
+    if (Array.isArray(msgs)) this.messages = msgs;
+  });
+
+  // Optional: handle connection errors
+  
+}
+
 
    users:any = []
 

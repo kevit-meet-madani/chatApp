@@ -14,6 +14,10 @@ export class LoginComponent {
    username!:string
 
    login(){
+     if(this.username !== "Meet" && this.username !== "Saurabh"){
+      alert("Unauthorized!")
+        return;
+     }
      localStorage.setItem('user',this.username)
      this.router.navigate(['/chat'])
    }
