@@ -1,80 +1,88 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { io } from 'socket.io-client';
-
+import { HttpClient } from '@angular/common/http';
+import { io, Socket } from 'socket.io-client';
 
 @Component({
   selector: 'app-chat',
-  templateUrl: './chat.component.html',
-  styleUrl: './chat.component.css'
+  templateUrl: './chat.component.html'
 })
-export class ChatComponent {
+export class ChatComponent implements OnInit {
 
-  constructor(private router:Router) {}
+  socket!: Socket;
+  messages: any[] = [];
+  users: any[] = [];
+  message: string = '';
 
-  socket!:any
-  messages:any = []
-
+  constructor(private router: Router, private http: HttpClient) {}
+  room = localStorage.getItem('roomid');
   ngOnInit() {
-  // Initialize messages array safely
-  this.messages = [];
+    
+    const username = localStorage.getItem('user');
 
-  this.socket = io('http://localhost:7000', {
-    transports: ['websocket'],
-    reconnectionAttempts: 3, // limit retries
-    timeout: 5000
-  });
-
-  // On successful connection
-  this.socket.on("connect", () => {
-    console.log("Socket connected:", this.socket.id);
-
-    const username = localStorage.getItem("user");
-    if (username) {
-      this.socket.emit("newuser", username);
+    if (!this.room || !username) {
+      this.router.navigate(['/']); 
+      return;
     }
-  });
 
-  // On receiving a new chat message
-  this.socket.on('chatMessage', (msg: any) => {
-    if (msg) this.messages.push(msg); // instantly show new message
-  });
+    
+    this.http.get(`http://localhost:7000/users/${this.room}`).subscribe({
+      next: (response: any) => {
+        this.users = response;
+      },
+      error: (err) => console.log(err)
+    });
 
-  // On receiving online users list
-  this.socket.on("onlineUsers", (users: string[]) => {
-    if (Array.isArray(users)) this.users = users;
-    console.log("Online users:", users);
-  });
+    this.getMessages();
+    
+    this.socket = io('http://localhost:7000', {
+      transports: ['websocket']
+    });
 
-  // On receiving all previous messages
-  this.socket.on("msgs", (msgs: any) => {
-    if (Array.isArray(msgs)) this.messages = msgs;
-  });
+    
+    this.socket.emit('newuser', { username, roomid: this.room });
 
-  // Optional: handle connection errors
-  
-}
+    
+    this.socket.on('user-message', (msg: any) => {
+      this.getMessages();
+    });
+    
+  }
 
+  getMessages(){
+      this.http.get(`http://localhost:7000/messages/${this.room}`).subscribe({
+      next: (response: any) => {
+        this.messages = response;
+      },
+      error: (err) => console.log(err)
+    });
 
-   users:any = []
+    }
 
-   
-   msg:any={
-    user:'',
-    text:''
-   }
-   message:any
+  sendMessage() {
+    if (!this.message.trim()) return; // ignore empty messages
 
-   
-   sendMessage(){
-    console.log(this.message)
-     this.socket.emit("user-message",{text:this.message,user:localStorage.getItem('user')});     
-     this.message = ''
-   }
+    const msg = {
+      content: this.message,
+      name: localStorage.getItem('user'),
+      roomid: localStorage.getItem('roomid')
+    };
 
-   left(){
-     this.socket.emit("left",localStorage.getItem('user'));
-     localStorage.removeItem('user');
-     this.router.navigate(['/'])
-   }
+    this.socket.emit('user-message', msg);
+    this.getMessages();
+    this.message = '';
+  }
+
+  left() {
+    const username = localStorage.getItem('user');
+    const room = localStorage.getItem('roomid');
+
+    if (username && room) {
+      this.socket.emit('leave-room', { username, room });
+    }
+
+    localStorage.removeItem('user');
+    localStorage.removeItem('roomid');
+    this.router.navigate(['/']);
+  }
 }

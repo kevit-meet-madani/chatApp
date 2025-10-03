@@ -1,14 +1,14 @@
 <div class="flex h-screen bg-gray-900 text-white">
   <!-- Sidebar: Online Users -->
   <div class="w-64 bg-gray-800 p-4 border-r border-gray-700">
-<h3 class="text-lg font-bold mb-4">Online Users</h3>
+<h3 class="text-lg font-bold mb-4">My Team</h3>
 <ul>
 <li
 *ngFor="let user of users"
 class="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-3"
 >
-<div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-semibold">{{ user[0] }}</div>
-<div class="text-sm">{{ user }}</div>
+<div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-semibold">{{ user.name[0] }}</div>
+<div class="text-sm">{{ user.name }}</div>
 </li>
 </ul>
 </div>
@@ -18,8 +18,8 @@ class="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-3"
     <!-- Chat messages -->
     <div class="flex-1 p-4 overflow-y-auto space-y-3">
       <div *ngFor="let msg of messages">
-        <span class="font-bold text-blue-400">{{msg.text.user}}</span>
-        <span class="ml-2">{{msg.text.text}}</span>
+        <span class="font-bold text-blue-400">{{msg.name}}</span>
+        <span class="ml-2">{{msg.content}}</span>
       </div>
     </div>
 
