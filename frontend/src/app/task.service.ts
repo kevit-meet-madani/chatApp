@@ -33,16 +33,20 @@ export class TaskService {
 
 
     add(task: Task) {
-        this.http.post<Task>(`${this.url}/add`,task);
+        return this.http.post<Task>(`${this.url}/add/${localStorage.getItem('roomid')}`,task);
     }
 
 
     update(task: Task) {
-        this.http.patch<Task>(`${this.url}/edit`,task);
+        return this.http.patch<Task>(`${this.url}/edit/${task.id}`,task);
+    }
+
+    update2(task: Task) {
+        return this.http.patch<Task>(`${this.url}/edit/full/${task.id}`,task);
     }
 
 
     delete(id: number) {
-        this.http.delete<Task>(`${this.url}/delete/${id}`);
+        return this.http.delete<Task>(`${this.url}/delete/${id}`);
     }
 }

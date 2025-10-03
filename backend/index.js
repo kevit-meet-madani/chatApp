@@ -96,7 +96,12 @@ const bcrypt = require("bcrypt");
 const Redis = require("ioredis");
 const app = express();
 const cors = require('cors');
+// import 'dotenv/config';
+const { GoogleGenAI } =  require("@google/genai");
 
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
 app.use(cors());
 
 const server = http.createServer(app);
@@ -124,6 +129,94 @@ const redis = new Redis({
   host: "127.0.0.1",
   port: 6379,
 });
+
+app.delete('/tasks/delete/:id', async(req,res,next) => {
+   const id = req.params.id;
+
+   try{
+     const result = await pool.query(
+      'DELETE FROM tasks where id = $1',[id]
+      )
+
+      const ans = result.rows;
+      return res.json(ans);
+   }
+   catch(error){
+    console.log(error);
+   }
+})
+
+app.post('/tasks/add/:roomid', async(req,res,next) => {
+    const { roomid } = req.params;
+
+    try{
+
+      const result = await pool.query(
+      'INSERT INTO tasks (roomid,"name","status",description,assigned_to) VALUES ($1,$2,$3,$4,$5);',[roomid,req.body.name,req.body.status,req.body.description,req.body.assigned_to]
+      )
+    }
+    catch(error){
+      console.log(error);
+    }
+})
+app.get('/tasks/:roomid', async(req,res,next) => {
+  const { roomid } = req.params;
+  try{
+    
+
+    const cachedTasks = await redis.get(`room:${roomid}:tasks`);
+    if (cachedTasks) {
+      console.log("✅ Cache hit");
+      return res.json(JSON.parse(cachedTasks));
+    }
+
+    const result = await pool.query(
+      'SELECT id,name,status,description,assigned_to from tasks where roomid = $1',[roomid]
+    )
+
+    const tasks = result.rows;
+
+    await redis.set(`room:${roomid}:tasks`, JSON.stringify(tasks), "EX", 30);
+
+    res.json(tasks);
+  }
+
+  catch(error){
+    console.log(error);
+  }
+})
+
+app.patch('/tasks/edit/:id', async (req,res,next) => {
+    const { id } = req.params;
+    console.log(req.body);
+    try{
+      const result = await pool.query(
+      `UPDATE tasks SET status = $1 WHERE id = $2`,[req.body.status,id]
+    )
+      const ans = result.rows;
+
+      return res.json(ans);
+    }
+    catch(error){
+      console.log(error);
+    }
+})
+
+app.patch('/tasks/edit/full/:id', async (req,res,next) => {
+    const { id } = req.params;
+    console.log(req.body);
+    try{
+      const result = await pool.query(
+      `UPDATE tasks SET status = $1,name = $2,description = $3,assigned_to = $4 WHERE id = $5`,[req.body.status,req.body.name,req.body.description,req.body.assigned_to,id]
+    )
+      const ans = result.rows;
+
+      return res.json(ans);
+    }
+    catch(error){
+      console.log(error);
+    }
+})
 
 app.post('/join', async(req,res,next) => {
    try{
@@ -210,6 +303,59 @@ app.get("/messages/:roomId", async (req, res) => {
     res.status(500).send("Failed to fetch messages");
   }
 
+});
+
+
+app.get('/generate-ai-report/:roomid', async (req, res) => {
+
+    const { roomid } = req.params;
+
+    const chatMessages = await pool.query(
+      `SELECT m.name, m.content, m.created_at
+       FROM messages m
+       WHERE roomid = $1
+       ORDER BY m.created_at ASC`,
+      [roomid]
+    );
+
+    const Messages = chatMessages.rows;    
+
+    const taskList = await pool.query(
+      'SELECT id,name,status,description,assigned_to from tasks where roomid = $1',[roomid]
+    )
+
+    const taskLists = taskList.rows;
+    // You could dynamically load or use data sent in req.body here
+    const systemInstruction = `You are a senior software developer having command accross all technologies like react.js , angular , node.js , nestjs ,redis , rabbitmq , go , python , flutter , .NET , C-sharp etc.. Your task is to analyze the provided team chat messages and task list to generate a concise status report using **Markdown**.`;
+    const userPrompt = `
+        Please generate a project status report based on the following data.
+ 
+        **Report Requirements:**
+        1. **Summary:** A 2-3 sentence summary of the team's activity and overall status.
+        2. **Blockers/Risks:** Identify any open or resolved blockers/risks mentioned in the chats.
+        3. **Task Status Table:** A Markdown table summarizing the current status of all tasks, including any progress noted in the chats.
+ 
+        **Chat Messages Data (JSON Array):**
+        ${JSON.stringify(Messages, null, 2)}
+ 
+        **Task List Data (JSON Array):**
+        ${JSON.stringify(taskLists, null, 2)}
+    `;
+ 
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: userPrompt,
+            config: {
+                systemInstruction: systemInstruction 
+            }
+        });
+        // Return the report text back to the Angular client
+        res.json({ reportMarkdown: response.text });
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        res.status(500).json({ error: "Failed to generate report" });
+    }
 });
  
 // Socket.IO connections

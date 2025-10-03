@@ -5,7 +5,7 @@ export interface Task {
 id?: number | null;
 name: string;
 description?: string;
-assignedTo?: string;
+assigned_to?: string;
 status: TaskStatus;
 createdAt?: string; // ISO timestamp
 dueDate?: string | null;

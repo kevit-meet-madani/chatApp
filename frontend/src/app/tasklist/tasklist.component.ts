@@ -1,6 +1,8 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { Task, TaskStatus } from '../task.model';
 import { TaskService } from '../task.service';
+import { subscribe } from 'node:diagnostics_channel';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-task-lists',
@@ -24,30 +26,48 @@ export class TaskListsComponent implements OnInit {
   form: Partial<Task> = {
     name: '',
     description: '',
-    assignedTo: '',
+    assigned_to: '',
     status: 'todo',
   };
 
-  constructor(private taskService: TaskService) {}
+  constructor(private taskService: TaskService,private http:HttpClient) {}
 
   ngOnInit(): void {
+     this.getTasks();
+  }
 
+  getTasks(){
+    this.taskService.getAll(localStorage.getItem('roomid')).subscribe({
+      next:(response) => {
+         this.tasks = response;
+         console.log(response)
+      },
+
+      error: (error) => {
+        console.log(error);
+      }
+    });
   }
 
   get filteredTasks(): Task[] {
-    const q = this.search.trim().toLowerCase();
-    return this.tasks
-      .filter((t) => {
-        const matchesStatus = !this.filterStatus || t.status === this.filterStatus;
-        const matchesQuery =
-          !q ||
-          t.name.toLowerCase().includes(q) ||
-          (t.description || '').toLowerCase().includes(q) ||
-          (t.assignedTo || '').toLowerCase().includes(q);
-        return matchesStatus && matchesQuery;
-      })
-      .sort((a, b) => b.createdAt!.localeCompare(a.createdAt!));
-  }
+  const q = this.search.trim().toLowerCase();
+  return this.tasks
+    .filter((t) => {
+      const matchesStatus = !this.filterStatus || t.status === this.filterStatus;
+      const matchesQuery =
+        !q ||
+        t.name.toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q) ||
+        (t.assigned_to || '').toLowerCase().includes(q);
+      return matchesStatus && matchesQuery;
+    })
+    .sort((a, b) => {
+      const dateA = a.createdAt || '';
+      const dateB = b.createdAt || '';
+      return dateB.localeCompare(dateA);
+    });
+}
+
 
   statusText(s: TaskStatus) {
     switch (s) {
@@ -74,7 +94,7 @@ export class TaskListsComponent implements OnInit {
   openAdd() {
     this.isDrawerOpen = true;
     this.editingId = null;
-    this.form = { name: '', description: '', assignedTo: '', status: 'todo' };
+    this.form = { name: '', description: '', assigned_to: '', status: 'todo' };
   }
 
   editTask(task: Task) {
@@ -86,75 +106,126 @@ export class TaskListsComponent implements OnInit {
   closeDrawer() {
     this.isDrawerOpen = false;
     this.editingId = null;
-    this.form = { name: '', description: '', assignedTo: '', status: 'todo' };
+    this.form = { name: '', description: '', assigned_to: '', status: 'todo' };
   }
 
   save() {
     if (!this.form.name || !this.form.status) return alert('Please provide a name and status');
 
-    if (this.editingId) {
+    if (this.editingId !== null) {
       // update existing
       const updated: Task = {
         id: this.editingId,
         name: this.form.name!.trim(),
         description: this.form.description || '',
-        assignedTo: this.form.assignedTo || '',
+        assigned_to: this.form.assigned_to || '',
         status: this.form.status as TaskStatus,
         createdAt: new Date().toISOString(),
       };
-      this.taskService.update(updated);
+      alert(JSON.stringify(updated))
+      this.taskService.update2(updated).subscribe({
+        next: (response) => {
+          console.log(response);
+          this.getTasks();
+        },
+
+        error: (error) => {
+          console.log(error);
+        }
+      });
     } else {
       // add new
       const newTask: Task = {
         id: this.generateId(),
         name: this.form.name!.trim(),
         description: this.form.description || '',
-        assignedTo: this.form.assignedTo || '',
+        assigned_to: this.form.assigned_to || '',
         status: this.form.status as TaskStatus,
         createdAt: new Date().toISOString(),
       };
-      this.taskService.add(newTask);
+      
+      this.taskService.add(newTask).subscribe({
+        next:(response) => {
+          console.log(response);
+          this.getTasks();
+        },
+
+        error:(error) => {
+          console.log(error);
+        }
+      });
     }
 
     this.closeDrawer();
   }
 
   toggleStatus(task: Task) {
-    const next: Task = { ...task };
-    if (task.status === 'todo') next.status = 'in-progress';
-    else if (task.status === 'in-progress') next.status = 'done';
-    else next.status = 'todo';
-    this.taskService.update(next);
-  }
+  const next: Task = { ...task };
 
-  deleteTask(task: Task) {
-    if (!confirm('Delete this task?')) return;
-    this.taskService.delete(task.id);
+  const status = task.status.toLowerCase();
+
+  if (status === 'todo') {
+    next.status = 'in-progress';
+  } else if (status === 'in-progress') {
+    next.status = 'done';
+  } else {
+    next.status = 'todo';
   }
+  next["id"] = task["id"]
+  console.log(next);
+  this.taskService.update(next).subscribe({
+    next: (updated) => {
+      task.status = updated.status;  // reflect change in UI
+    },
+    error: (err) => console.error('Update failed:', err)
+  });
+}
+
+
+  // ...existing code...
+deleteTask(task: Task) {
+  if (!confirm('Delete this task?')) return;
+  if (typeof task.id === 'number') {
+    this.taskService.delete(task.id).subscribe({
+      next: (response) => {
+        this.getTasks();
+      },
+
+      error: (error) => {
+        console.log(error);
+      }
+    });
+  } else {
+    console.error('Invalid task id:', task.id);
+  }
+}
+// ...existing code...
 
   // ---------------- AI Report Logic ----------------
   generateReport() {
-    this.isReportOpen = true;
-    this.isGeneratingReport = true;
-    this.reportContent = '';
-    this.showReport = true;
+  this.isReportOpen = true;
+  this.isGeneratingReport = true;
+  this.reportContent = '';
+  this.showReport = true;
 
-    setTimeout(() => {
-      const counts: any = { todo: 0, 'in-progress': 0, done: 0 };
-      this.tasks.forEach((t) => (counts[t.status] = (counts[t.status] || 0) + 1));
+  // Prepare data to send to your API if needed
 
-      const top = this.tasks
-        .slice(0, 5)
-        .map(
-          (t) =>
-            `• ${t.name} (${t.assignedTo || 'Unassigned'}) [${this.statusText(t.status)}]`
-        )
-        .join('\n');
+  // Call your API
+  this.http.get<{ markdown: string }>(`http://localhost:7000/generate-ai-report/${localStorage.getItem('roomid')}`)
+    .subscribe({
+      next: (res) => {
+        // The API returns markdown text
+        this.reportContent = res.markdown;
+        this.isGeneratingReport = false;
+      },
+      error: (err) => {
+        console.error('Failed to generate report', err);
+        this.reportContent = 'Failed to generate report. Please try again.';
+        this.isGeneratingReport = false;
+      }
+    });
+}
 
-      this.reportContent = `AI-generated summary\n\nTotals:\nTo do: ${counts.todo}\nIn progress: ${counts['in-progress']}\nDone: ${counts.done}\n\nTop tasks:\n${top}\n\nGenerated at ${new Date().toLocaleString()}`;
-      this.isGeneratingReport = false;
-    }, 900);
-  }
 
   closeReport() {
     this.isReportOpen = false;

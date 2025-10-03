@@ -69,9 +69,9 @@
             <div
               class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-semibold"
             >
-              {{ task.assignedTo ? task.assignedTo[0] : '?' }}
+              {{ task.assigned_to ? task.assigned_to[0] : '?' }}
             </div>
-            <div class="text-sm">{{ task.assignedTo || 'Unassigned' }}</div>
+            <div class="text-sm">{{ task.assigned_to || 'Unassigned' }}</div>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@
       ></textarea>
 
       <input
-        [(ngModel)]="form.assignedTo"
+        [(ngModel)]="form.assigned_to"
         placeholder="Assign to (name)"
         class="col-span-2 p-3 rounded bg-gray-700 text-white"
       />
