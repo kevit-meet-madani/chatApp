@@ -123,10 +123,11 @@ export class TaskListsComponent implements OnInit {
         createdAt: new Date().toISOString(),
       };
       alert(JSON.stringify(updated))
+      const index = this.tasks.findIndex(t => t.id === this.form.id);
+  if (index > -1) this.tasks[index] = updated;
       this.taskService.update2(updated).subscribe({
         next: (response) => {
           console.log(response);
-          this.getTasks();
         },
 
         error: (error) => {
@@ -143,7 +144,7 @@ export class TaskListsComponent implements OnInit {
         status: this.form.status as TaskStatus,
         createdAt: new Date().toISOString(),
       };
-      
+      this.tasks.push(newTask);
       this.taskService.add(newTask).subscribe({
         next:(response) => {
           console.log(response);
@@ -162,33 +163,38 @@ export class TaskListsComponent implements OnInit {
   toggleStatus(task: Task) {
   const next: Task = { ...task };
 
-  const status = task.status.toLowerCase();
-
-  if (status === 'todo') {
-    next.status = 'in-progress';
-  } else if (status === 'in-progress') {
-    next.status = 'done';
-  } else {
-    next.status = 'todo';
+  switch ((task.status || '').toLowerCase()) {
+    case 'todo':
+      next.status = 'in-progress';
+      break;
+    case 'in-progress':
+      next.status = 'done';
+      break;
+    default:
+      next.status = 'todo';
   }
-  next["id"] = task["id"]
-  console.log(next);
+  const index = this.tasks.findIndex(t => t.id === task.id);
+  if (index > -1) this.tasks[index].status = next.status;
   this.taskService.update(next).subscribe({
     next: (updated) => {
-      task.status = updated.status;  // reflect change in UI
+      // Update the task in the array to trigger UI change
+      
     },
     error: (err) => console.error('Update failed:', err)
   });
 }
 
 
+
   // ...existing code...
 deleteTask(task: Task) {
   if (!confirm('Delete this task?')) return;
+
+  this.tasks = this.tasks.filter(t => t.id !== task.id);
   if (typeof task.id === 'number') {
     this.taskService.delete(task.id).subscribe({
       next: (response) => {
-        this.getTasks();
+        console.log("deleted");
       },
 
       error: (error) => {
