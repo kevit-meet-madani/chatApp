@@ -14,7 +14,7 @@ export class TaskService {
 
     constructor(private http:HttpClient) {}
 
-    url = 'http://localhost:7000/tasks'
+    url = 'http://172.24.2.207:7000/tasks'
     private tasks$ = new BehaviorSubject<Task[]>(SAMPLE_TASKS);
 
 

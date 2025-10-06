@@ -26,7 +26,7 @@ export class ChatComponent implements OnInit {
     }
 
     
-    this.http.get(`http://localhost:7000/users/${this.room}`).subscribe({
+    this.http.get(`http://172.24.2.207:7000/chat/users/${this.room}`).subscribe({
       next: (response: any) => {
         this.users = response;
       },
@@ -35,7 +35,7 @@ export class ChatComponent implements OnInit {
 
     this.getMessages();
     
-    this.socket = io('http://localhost:7000', {
+    this.socket = io('http://172.24.2.207:7000', {
       transports: ['websocket']
     });
 
@@ -54,7 +54,7 @@ export class ChatComponent implements OnInit {
   }
 
   getMessages(){
-      this.http.get(`http://localhost:7000/messages/${this.room}`).subscribe({
+      this.http.get(`http://172.24.2.207:7000/chat/messages/${this.room}`).subscribe({
       next: (response: any) => {
         this.messages = response;
       },

@@ -20,7 +20,7 @@ export class LoginComponent {
       name: this.username,
       password: this.password
      }
-     this.http.post<any>("http://localhost:7000/join",body).subscribe({
+     this.http.post<any>("http://172.24.2.207:7000/chat/join",body).subscribe({
       next: (response) => {
          localStorage.setItem('user',this.username);
          localStorage.setItem('roomid',response[0].roomid)
