@@ -89,6 +89,7 @@
 // });
 
 const express = require("express");
+require('dotenv').config();
 const http = require("http");
 const { Server } = require("socket.io");
 const { Pool } = require("pg");
@@ -111,10 +112,10 @@ app.use(express.json());
 // PostgreSQL pool
 
 const pool = new Pool({
-  user: "meet",
+  user: process.env.DB_USER,
   host: process.env.DB_HOST,
-  database: "mydb",
-  password: "456",
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
 });
 
@@ -351,7 +352,9 @@ app.get('/generate-ai-report/:roomid', async (req, res) => {
             }
         });
         // Return the report text back to the Angular client
-        res.json({ reportMarkdown: response.text });
+        console.log(response.candidates[0].content.parts[0].text);
+        const ans = response.candidates[0].content.parts[0].text;
+        return res.json(ans);
     } catch (error) {
         console.error("Gemini API Error:", error);
         res.status(500).json({ error: "Failed to generate report" });
@@ -385,7 +388,7 @@ io.on("connection", (socket) => {
         "INSERT INTO messages (name, roomid, content) VALUES ($1, $2, $3)",
         [name, roomid, content]
       );
-      console.log("Dddddddddddddddddddddd")
+      
       // 🔄 Invalidate cache (so new messages appear on next fetch)
 
       await redis.del(`room:${roomid}:messages`);

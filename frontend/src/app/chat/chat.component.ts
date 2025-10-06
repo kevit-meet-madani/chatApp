@@ -43,9 +43,13 @@ export class ChatComponent implements OnInit {
     this.socket.emit('newuser', { username, roomid: this.room });
 
     
-    this.socket.on('user-message', (msg: any) => {
-      this.getMessages();
-    });
+    // this.socket.on('user-message', (msg: any) => {
+    //   this.getMessages();
+    // });
+
+    this.socket.on("message", (res) => {
+      this.messages.push(res);
+    })
     
   }
 

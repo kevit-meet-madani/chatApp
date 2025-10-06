@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { ChatComponent } from './chat/chat.component';
 import { TaskListsComponent } from './tasklist/tasklist.component';
 import { provideHttpClient, withFetch } from '@angular/common/http';
+import { MarkdownModule } from 'ngx-markdown';
 
 
 @NgModule({
@@ -20,7 +21,8 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    FormsModule
+    FormsModule,
+    MarkdownModule.forRoot()
   ],
   providers: [
     provideClientHydration(),

@@ -211,11 +211,12 @@ deleteTask(task: Task) {
   // Prepare data to send to your API if needed
 
   // Call your API
-  this.http.get<{ markdown: string }>(`http://localhost:7000/generate-ai-report/${localStorage.getItem('roomid')}`)
+  this.http.get(`http://localhost:7000/generate-ai-report/${localStorage.getItem('roomid')}`)
     .subscribe({
       next: (res) => {
         // The API returns markdown text
-        this.reportContent = res.markdown;
+        this.reportContent = JSON.stringify(res);
+        console.log(res);
         this.isGeneratingReport = false;
       },
       error: (err) => {
