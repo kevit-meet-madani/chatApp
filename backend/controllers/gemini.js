@@ -1,5 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 const { Pool } = require("pg");
+require('dotenv').config();
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
@@ -42,8 +43,8 @@ exports.callAi = async(req,res,next) => {
         Please generate a project status report based on the following data.
  
         **Report Requirements:**
-        1. **Summary:** A 2-3 sentence summary of the team's activity and overall status.
-        2. **Blockers/Risks:** Identify any open or resolved blockers/risks mentioned in the chats.
+        1. **Summary:** A detailed sentence summary of the team's activity and overall status.
+        2. **Suggestions:** Analyze task list data properly and observe who has assigned which type of tasks and verify that that person is going correctly or not from their conversation in chat messages array, if not than provide that person a detailed roadmap to complete their task and a persons who are going right way help them to provide more optimization to complete their task.
         3. **Task Status Table:** A Markdown table summarizing the current status of all tasks, including any progress noted in the chats.
  
         **Chat Messages Data (JSON Array):**
@@ -51,6 +52,8 @@ exports.callAi = async(req,res,next) => {
  
         **Task List Data (JSON Array):**
         ${JSON.stringify(taskLists, null, 2)}
+
+        You are feel free to take any amount of time but i need quality and proper response as required.
     `;
  
     try {

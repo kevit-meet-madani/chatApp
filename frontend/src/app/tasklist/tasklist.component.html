@@ -179,18 +179,28 @@
       </div>
 
       <!-- Report Content -->
-      <markdown
+      <!-- <markdown
         *ngIf="!isGeneratingReport"
         [data]="reportContent"
         class="prose prose-invert max-w-none prose-headings:text-blue-400 prose-p:text-gray-200 prose-li:marker:text-blue-400"
-      ></markdown>
+      ></markdown> -->
+      <pre class="whitespace-pre-wrap font-sans text-gray-200">
+          <!-- {{ formattedReport }} -->
+            {{ displayedContent }}
+      </pre>
     </div>
 
     <!-- Footer -->
     <div class="border-t border-gray-700 px-6 py-4 flex justify-end">
       <button
+        (click)="download()"
+        class="bg-blue-600 hover:bg-blue-700 px-5 py-2 m-5 rounded-lg font-semibold shadow-md transition-colors"
+      >
+        Download
+      </button>
+      <button
         (click)="closeReport()"
-        class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg font-semibold shadow-md transition-colors"
+        class="bg-blue-600 hover:bg-blue-700 px-5 py-2 m-5 rounded-lg font-semibold shadow-md transition-colors"
       >
         Close
       </button>

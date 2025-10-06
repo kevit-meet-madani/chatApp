@@ -30,10 +30,13 @@ export class TaskListsComponent implements OnInit {
     status: 'todo',
   };
 
+  displayedContent: string = '';
+
   constructor(private taskService: TaskService,private http:HttpClient) {}
 
   ngOnInit(): void {
      this.getTasks();
+     
   }
 
   getTasks(){
@@ -223,6 +226,7 @@ deleteTask(task: Task) {
         // The API returns markdown text
         this.reportContent = JSON.stringify(res);
         console.log(res);
+        this.showReportLineByLine();
         this.isGeneratingReport = false;
       },
       error: (err) => {
@@ -233,6 +237,37 @@ deleteTask(task: Task) {
     });
 }
 
+     get formattedReport(): string {
+  if (!this.reportContent) return '';
+  
+  return this.reportContent
+    .replace(/^## (.*)$/gm, '🔹 $1')     // H2 → bullet
+    .replace(/^### (.*)$/gm, '➡️ $1')    // H3 → arrow
+    .replace(/\|/g, ' | ')               // Make tables spaced
+    .replace(/\\n/g, '\n');              // Convert literal \n to newlines
+   }
+   
+   showReportLineByLine() {
+    // Step 1: convert literal \n to real newlines
+    const textWithNewlines = this.reportContent.replace(/\\n/g, '\n');
+
+    // Step 2: split by actual newlines
+    const lines = textWithNewlines.split('\n');
+    let index = 0;
+
+    const interval = setInterval(() => {
+      if (index >= lines.length) {
+        clearInterval(interval);
+        this.isGeneratingReport = false;
+        return;
+      }
+
+      // Add one line at a time
+      this.displayedContent += lines[index] + '\n';
+      index++;
+    }, 400); // Adjust speed here (ms per line)
+  }
+
 
   closeReport() {
     this.isReportOpen = false;
@@ -240,6 +275,21 @@ deleteTask(task: Task) {
     this.reportContent = '';
     this.showReport = false;
   }
+
+  download(){
+     const blob = new Blob([this.reportContent], { type:'text/plain'});
+
+     const url = window.URL.createObjectURL(blob);
+     const link = document.createElement('a');
+     link.href = url;
+     link.download = 'report.txt';
+     link.click();
+
+    // Cleanup
+    window.URL.revokeObjectURL(url);
+  }
+
+  
 
   // Close modal/drawer on ESC key
   @HostListener('document:keydown.escape', ['$event'])
